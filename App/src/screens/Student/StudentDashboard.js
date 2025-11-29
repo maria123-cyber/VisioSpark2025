@@ -1,72 +1,79 @@
-// src/screens/Student/StudentDashboard.js
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import Header from '../../components/Header';
+import React, { useState, useEffect } from 'react';
+import { View, FlatList, RefreshControl } from 'react-native';
+import { Searchbar, Chip } from 'react-native-paper';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { db } from '../../firebase';
 import EventCard from '../../components/EventCard';
 import GlobalStyles from '../../styles/globalStyles';
 import Colors from '../../utils/colors';
 import CustomButton from '../../components/CustomButton';
-import { auth, db } from '../../../firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
 
 export default function StudentDashboard({ navigation }) {
   const [events, setEvents] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const user = auth.currentUser;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterSociety, setFilterSociety] = useState(null);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'events'), orderBy('date', 'asc'));
+      const snapshot = await getDocs(q);
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setEvents(list);
+      setFilteredEvents(list);
+    } catch (e) {
+      console.log(e);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const q = query(collection(db, 'events'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setEvents(arr);
-      setLoading(false);
-    }, (e) => {
-      Alert.alert('Error', e.message);
-      setLoading(false);
-    });
-    return unsub;
+    fetchEvents();
   }, []);
 
-  const onLogout = async () => {
-    await signOut(auth);
-  };
-
-  const handleRegister = async (ev) => {
-    // register student for event (creates a subcollection or a registrations collection)
-    try {
-      const regRef = collection(db, 'events', ev.id, 'registrations');
-      // simple create (no duplicates check for brevity)
-      await regRef.add
-        ? regRef.add({ uid: user.uid, name: user.email, registeredAt: new Date().toISOString() })
-        : null;
-      // If using modular Firestore, prefer addDoc(collection(...), {...})
-      Alert.alert('Registered', 'You have registered for this event');
-    } catch (err) {
-      Alert.alert('Error', err.message);
+  useEffect(() => {
+    let result = events;
+    if (filterSociety) {
+      result = result.filter(e => e.society === filterSociety);
     }
-  };
+    if (searchQuery) {
+      result = result.filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    setFilteredEvents(result);
+  }, [searchQuery, filterSociety, events]);
 
   return (
     <View style={GlobalStyles.container}>
-      <Header title="UniWeek - Events" right="Logout" onRightPress={onLogout} />
-      <View style={{ marginVertical: 8 }}>
-        <CustomButton title="Search & Filter" onPress={() => navigation.navigate('SearchFilter')} style={{ marginBottom: 8 }} />
-        <CustomButton title="My Calendar" onPress={() => navigation.navigate('Calendar')} style={{ marginBottom: 8 }} />
+      <Searchbar
+        placeholder="Search Events..."
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+        style={{ marginBottom: 10, backgroundColor: '#fff' }}
+      />
+      
+      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+        <Chip selected={filterSociety === null} onPress={() => setFilterSociety(null)} style={{ marginRight: 5 }}>All</Chip>
+        <Chip selected={filterSociety === 'ACM'} onPress={() => setFilterSociety('ACM')} style={{ marginRight: 5 }}>ACM</Chip>
+        <Chip selected={filterSociety === 'CLS'} onPress={() => setFilterSociety('CLS')} style={{ marginRight: 5 }}>CLS</Chip>
+        <Chip selected={filterSociety === 'CSS'} onPress={() => setFilterSociety('CSS')}>CSS</Chip>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {loading ? <Text>Loading events...</Text> : null}
-        {events.map(ev => (
-          <EventCard
-            key={ev.id}
-            event={ev}
-            onPress={() => navigation.navigate('EventDetails', { eventId: ev.id })}
-            onRegister={() => handleRegister(ev)}
-            registered={false}
-          />
-        ))}
-      </ScrollView>
+      <FlatList
+        data={filteredEvents}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <EventCard event={item} onPress={() => navigation.navigate('EventDetails', { event: item })} />
+        )}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchEvents} />}
+        contentContainerStyle={{ paddingBottom: 80 }}
+      />
+
+      {/* Floating Action Button for Calendar */}
+      <View style={{ position: 'absolute', bottom: 20, right: 20, left: 20 }}>
+        <CustomButton label="My Schedule" onPress={() => navigation.navigate('Calendar')} />
+      </View>
     </View>
   );
 }

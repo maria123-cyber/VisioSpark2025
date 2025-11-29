@@ -1,41 +1,27 @@
-// src/components/CustomButton.js
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Button } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
 import Colors from '../utils/colors';
 
-export default function CustomButton({ title, onPress, style, disabled }) {
+export default function CustomButton({ label, onPress, mode = 'contained', loading = false, style, color }) {
   return (
-    <TouchableOpacity
+    <Button
+      mode={mode}
       onPress={onPress}
-      activeOpacity={0.8}
-      disabled={disabled}
-      style={[styles.btn, style, disabled && styles.disabled]}
+      loading={loading}
+      style={[styles.btn, style]}
+      contentStyle={{ paddingVertical: 6 }}
+      buttonColor={mode === 'contained' ? (color || Colors.primary) : undefined}
+      textColor={mode === 'outlined' ? (color || Colors.primary) : '#fff'}
     >
-      <Text style={styles.text}>{title}</Text>
-    </TouchableOpacity>
+      {label}
+    </Button>
   );
 }
 
 const styles = StyleSheet.create({
   btn: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  text: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  disabled: {
-    opacity: 0.6,
-  },
+    borderRadius: 8,
+    marginVertical: 8,
+  }
 });

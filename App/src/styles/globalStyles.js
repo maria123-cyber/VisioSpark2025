@@ -1,33 +1,46 @@
-// src/styles/globalStyles.js
 import { StyleSheet } from 'react-native';
 import Colors from '../utils/colors';
 
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.background,
     padding: 16,
   },
   centered: {
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 8,
+    elevation: 4, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.textLight,
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: Colors.surface,
     marginBottom: 12,
-    // shadow for iOS
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 8,
-    // elevation for Android
-    elevation: 4,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.textDark,
-  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  }
 });

@@ -1,38 +1,39 @@
-// src/screens/Student/CalendarScreen.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, FlatList } from 'react-native';
+import { Text, List } from 'react-native-paper';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
 import GlobalStyles from '../../styles/globalStyles';
-import { db, auth } from '../../../firebase';
-import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 
 export default function CalendarScreen() {
-  const [regs, setRegs] = useState([]);
+  const [myEvents, setMyEvents] = useState([]);
 
   useEffect(() => {
-    const fetchRegs = async () => {
-      // using collectionGroup to fetch registrations across all events
-      try {
-        const q = query(collectionGroup(db, 'registrations'), where('uid', '==', auth.currentUser.uid));
-        const snap = await getDocs(q);
-        const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setRegs(arr);
-      } catch (err) {
-        console.log(err);
-      }
+    const fetch = async () => {
+      const q = query(collection(db, 'registrations'), where('studentId', '==', auth.currentUser.uid));
+      const snap = await getDocs(q);
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setMyEvents(list);
     };
-    fetchRegs();
+    fetch();
   }, []);
 
   return (
-    <ScrollView style={GlobalStyles.container}>
-      <Text style={GlobalStyles.headerTitle}>My Calendar</Text>
-      <Text style={{ color: '#666', marginBottom: 12 }}>Registered events</Text>
-      {regs.length === 0 ? <Text>No registered events yet</Text> : regs.map(r => (
-        <View key={r.id} style={GlobalStyles.card}>
-          <Text style={{ fontWeight: '700' }}>{r.eventName || 'Event'}</Text>
-          <Text style={{ color: '#666' }}>{r.registeredAt}</Text>
-        </View>
-      ))}
-    </ScrollView>
+    <View style={GlobalStyles.container}>
+      <Text style={GlobalStyles.title}>My Registrations</Text>
+      <FlatList
+        data={myEvents}
+        keyExtractor={i => i.id}
+        renderItem={({ item }) => (
+          <List.Item
+            title={item.eventTitle}
+            description={new Date(item.eventDate.seconds * 1000).toDateString()}
+            left={props => <List.Icon {...props} icon="check-circle" color="green" />}
+            style={GlobalStyles.card}
+          />
+        )}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>No events registered yet.</Text>}
+      />
+    </View>
   );
 }

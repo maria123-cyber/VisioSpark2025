@@ -1,48 +1,93 @@
-// src/screens/Auth/RegisterScreen.js
 import React, { useState } from 'react';
-import { View, Text, Alert, ScrollView } from 'react-native';
-import InputField from '../../components/InputField';
-import CustomButton from '../../components/CustomButton';
+import { View, Alert, ScrollView } from 'react-native';
+import { Text, TextInput, RadioButton } from 'react-native-paper';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../../../firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
+import CustomButton from '../../components/CustomButton';
+import GlobalStyles from '../../styles/globalStyles';
+import Colors from '../../utils/colors';
 
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('student');
+  const [society, setSociety] = useState('ACM');
+  const [loading, setLoading] = useState(false);
 
-  const onRegister = async () => {
-    if (!name || !email || !password) return Alert.alert('Please fill all fields');
+  const handleRegister = async () => {
+    if(!name || !email || !password) {
+      Alert.alert('Error', 'Please fill all fields');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const userCred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      const uid = userCred.user.uid;
-      // create profile doc
-      await setDoc(doc(db, 'users', uid), {
-        uid,
+      const res = await createUserWithEmailAndPassword(auth, email, password);
+      
+      const userData = {
         name,
-        email: email.trim(),
-        role: 'student', // default role
-        createdAt: new Date().toISOString(),
-      });
-      // auth listener in App.js will redirect
-    } catch (err) {
-      Alert.alert('Registration failed', err.message);
+        email,
+        role,
+        createdAt: new Date(),
+        // Only add society field if handler
+        ...(role === 'handler' && { society })
+      };
+
+      await setDoc(doc(db, 'users', res.user.uid), userData);
+      
+      Alert.alert('Success', 'Account created successfully!', [
+        { text: 'OK', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }) }
+      ]);
+    } catch (error) {
+      Alert.alert('Registration Failed', error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent:'center', padding: 20, backgroundColor: '#F5F7FA' }}>
-      <View>
-        <Text style={{fontSize:26, fontWeight:'700', marginBottom:6}}>Create Account</Text>
-        <Text style={{color:'#666', marginBottom:18}}>Register to join UniWeek</Text>
+    <ScrollView contentContainerStyle={[GlobalStyles.container, { paddingVertical: 40 }]}>
+      <Text style={GlobalStyles.title}>Create Account</Text>
+      
+      <TextInput mode="outlined" label="Full Name" value={name} onChangeText={setName} style={GlobalStyles.input} />
+      <TextInput mode="outlined" label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" style={GlobalStyles.input} />
+      <TextInput mode="outlined" label="Password" value={password} onChangeText={setPassword} secureTextEntry style={GlobalStyles.input} />
 
-        <InputField placeholder="Full name" value={name} onChangeText={setName} />
-        <InputField placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-        <InputField placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+      <Text style={{ marginTop: 10, fontWeight: 'bold' }}>I am a:</Text>
+      <RadioButton.Group onValueChange={setRole} value={role}>
+        <View style={GlobalStyles.row}>
+          <Text>Student</Text>
+          <RadioButton value="student" />
+        </View>
+        <View style={GlobalStyles.row}>
+          <Text>Society Handler</Text>
+          <RadioButton value="handler" />
+        </View>
+      </RadioButton.Group>
 
-        <CustomButton title="Register" onPress={onRegister} style={{ marginTop: 12 }} />
-      </View>
+      {role === 'handler' && (
+        <View style={{ backgroundColor: '#eef2f5', padding: 10, borderRadius: 8, marginTop: 10 }}>
+          <Text style={{ fontWeight: 'bold' }}>Select Society:</Text>
+          <RadioButton.Group onValueChange={setSociety} value={society}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
+                <RadioButton value="ACM" /><Text>ACM</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
+                <RadioButton value="CLS" /><Text>CLS</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <RadioButton value="CSS" /><Text>CSS</Text>
+              </View>
+            </View>
+          </RadioButton.Group>
+        </View>
+      )}
+
+      <CustomButton label="Register" onPress={handleRegister} loading={loading} style={{ marginTop: 20 }} />
+      <CustomButton label="Back to Login" mode="text" onPress={() => navigation.navigate('Login')} />
     </ScrollView>
   );
 }

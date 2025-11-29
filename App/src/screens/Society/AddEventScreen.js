@@ -1,46 +1,42 @@
-// src/screens/Society/AddEventScreen.js
 import React, { useState } from 'react';
-import { View, Alert } from 'react-native';
-import InputField from '../../components/InputField';
+import { ScrollView, Alert } from 'react-native';
+import { TextInput } from 'react-native-paper';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../../firebase';
 import CustomButton from '../../components/CustomButton';
 import GlobalStyles from '../../styles/globalStyles';
-import { db } from '../../../firebase';
-import { addDoc, collection } from 'firebase/firestore';
 
 export default function AddEventScreen({ navigation }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState('');
-  const [venue, setVenue] = useState('');
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
   const [society, setSociety] = useState('ACM');
+  const [venue, setVenue] = useState('');
+  const [dateStr, setDateStr] = useState('');
 
-  const submit = async () => {
-    if (!name || !date || !venue) return Alert.alert('Please fill event name, date, and venue');
+  const create = async () => {
+    if(!title || !dateStr) return Alert.alert('Fill all fields');
     try {
       await addDoc(collection(db, 'events'), {
-        name,
-        description,
-        date,
-        venue,
+        title,
+        description: desc,
         society,
-        createdAt: new Date().toISOString()
+        venue,
+        date: new Date(dateStr), // Simple parsing, expecting YYYY-MM-DD format for prototype
+        createdAt: new Date()
       });
-      Alert.alert('Success', 'Event added');
+      Alert.alert('Success', 'Event Created');
       navigation.goBack();
-    } catch (err) {
-      Alert.alert('Error', err.message);
-    }
+    } catch(e) { Alert.alert('Error', e.message); }
   };
 
   return (
-    <View style={GlobalStyles.container}>
-      <Text style={{fontSize:20, fontWeight:'700', marginBottom:8}}>Add Event</Text>
-      <InputField placeholder="Event name" value={name} onChangeText={setName} />
-      <InputField placeholder="Description" value={description} onChangeText={setDescription} />
-      <InputField placeholder="Date & time (e.g., 2025-12-09 10:00)" value={date} onChangeText={setDate} />
-      <InputField placeholder="Venue" value={venue} onChangeText={setVenue} />
-      <InputField placeholder="Society (ACM / CLS / CSS)" value={society} onChangeText={setSociety} />
-      <CustomButton title="Create Event" onPress={submit} />
-    </View>
+    <ScrollView style={GlobalStyles.container}>
+      <TextInput label="Event Title" value={title} onChangeText={setTitle} style={GlobalStyles.input} />
+      <TextInput label="Society (ACM, CLS, CSS)" value={society} onChangeText={setSociety} style={GlobalStyles.input} />
+      <TextInput label="Description" value={desc} onChangeText={setDesc} multiline style={GlobalStyles.input} />
+      <TextInput label="Venue" value={venue} onChangeText={setVenue} style={GlobalStyles.input} />
+      <TextInput label="Date (YYYY-MM-DD)" value={dateStr} onChangeText={setDateStr} style={GlobalStyles.input} />
+      <CustomButton label="Publish Event" onPress={create} />
+    </ScrollView>
   );
 }

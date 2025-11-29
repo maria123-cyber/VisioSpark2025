@@ -1,38 +1,35 @@
-// src/screens/Student/FeedbackScreen.js
 import React, { useState } from 'react';
-import { View, Text, Alert } from 'react-native';
-import InputField from '../../components/InputField';
+import { View, Alert } from 'react-native';
+import { TextInput, Text } from 'react-native-paper';
+import { addDoc, collection } from 'firebase/firestore';
+import { db, auth } from '../../firebase';
 import CustomButton from '../../components/CustomButton';
 import GlobalStyles from '../../styles/globalStyles';
-import { db, auth } from '../../../firebase';
-import { addDoc, collection } from 'firebase/firestore';
 
-export default function FeedbackScreen({ route }) {
-  const [eventId, setEventId] = useState(route?.params?.eventId || '');
-  const [feedback, setFeedback] = useState('');
+export default function FeedbackScreen({ route, navigation }) {
+  const { eventId } = route.params;
+  const [rating, setRating] = useState('');
+  const [comment, setComment] = useState('');
 
   const submit = async () => {
-    if (!eventId || !feedback) return Alert.alert('Please select event and write feedback');
-    try {
-      await addDoc(collection(db, 'events', eventId, 'feedback'), {
-        uid: auth.currentUser.uid,
-        feedback,
-        createdAt: new Date().toISOString()
-      });
-      Alert.alert('Thanks', 'Feedback submitted');
-      setFeedback('');
-    } catch (err) {
-      Alert.alert('Error', err.message);
-    }
+    if(!rating || !comment) return Alert.alert("Please enter details");
+    await addDoc(collection(db, 'feedback'), {
+      eventId,
+      studentId: auth.currentUser.uid,
+      rating: parseInt(rating),
+      comment,
+      createdAt: new Date()
+    });
+    Alert.alert('Thanks', 'Feedback submitted');
+    navigation.goBack();
   };
 
   return (
     <View style={GlobalStyles.container}>
-      <Text style={GlobalStyles.headerTitle}>Give Feedback</Text>
-      <Text style={{ color: '#666', marginBottom: 8 }}>Paste event ID (from details) to give feedback</Text>
-      <InputField placeholder="Event ID" value={eventId} onChangeText={setEventId} />
-      <InputField placeholder="Write your feedback..." value={feedback} onChangeText={setFeedback} />
-      <CustomButton title="Submit Feedback" onPress={submit} />
+      <Text style={GlobalStyles.title}>Rate Event</Text>
+      <TextInput label="Rating (1-5)" value={rating} onChangeText={setRating} keyboardType="numeric" style={GlobalStyles.input} />
+      <TextInput label="Comments" value={comment} onChangeText={setComment} multiline style={GlobalStyles.input} />
+      <CustomButton label="Submit" onPress={submit} />
     </View>
   );
 }
