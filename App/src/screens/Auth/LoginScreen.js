@@ -3,6 +3,7 @@ import { View, Alert } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
+//import { auth } from '../../../firebase';
 import CustomButton from '../../components/CustomButton';
 import GlobalStyles from '../../styles/globalStyles';
 import Colors from '../../utils/colors';
